@@ -26,8 +26,8 @@
  *   #include "c_timestamp.h"
  *
  * @author Guilherme Arruda - https://github.com/ohananoshi
- * @date 12 - July - 2025 [last modified:  12 - July - 2025]
- * @version 0.1
+ * @date 12 - July - 2025 [last modified:  13 - July - 2025]
+ * @version 0.1.1
  * @attention no value limits validation yet.
  * @
  */
@@ -257,6 +257,199 @@ uint8_t _timestamp_validate(const char *ts_str, char* dest_fmt){
     if(strlen(tz_fmt) > 0) strcat(ts_fmt, tz_fmt);
     strcpy(dest_fmt, ts_fmt);
     //printf("ts_fmt: %s\n", ts_fmt);
+
+    return 1;
+}
+
+/**
+ * @test
+ * 
+ * less maintenance and memory usage to timestamp validation
+ */
+uint8_t _timestamp_validate2(const char *ts_str){
+    int16_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t minute;
+    uint8_t second;
+    uint32_t fractional_second;
+    char tz_id[64] = "";
+    int8_t tz_hour;    
+    uint8_t tz_min;    
+    uint8_t tz_sec;
+
+    char sep;
+
+    if(sscanf(ts_str, "%hd", &year) == 1){
+        if(year > -999 && year < 1000){
+            printf("erro1.0: date wrong format");
+            return 0;
+        }
+    }
+    else{
+        printf("erro1.1: date wrong format");
+        return 0;
+    }
+
+    if(sscanf(ts_str, "%*d%c", &sep) != 1) return 1;
+    
+    if(sscanf(ts_str, "%*d%*c%hhu", &month) == 1){
+        if(month < 1 || month > 12 || sep != '-'){
+            printf("erro2.0: date wrong format");
+            return 0;
+        }
+    }
+    else printf("erro2.1: date wrong format");
+
+    if(sscanf(ts_str, "%*d%*c%*u%c", &sep) != 1) return 1;
+    
+    if(sscanf(ts_str, "%*d%*c%*u%*c%hhu", &day) == 1){
+        if(day < 1 || day > 31 || sep != '-'){
+            printf("erro3.0: date wrong format");
+            return 0;
+        }
+    }
+    else printf("erro3.1: date wrong format");
+
+    if(sscanf(ts_str, "%*d%*c%*u%*c%*u%c", &sep) != 1) return 1;
+    
+    if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%hhd", &hour) == 1){
+        if((hour < -23 || hour > 23) && sep != ' ' && sep != 'T'){
+            printf("erro4.0: date wrong format");
+            return 0;
+        }
+    }
+    else printf("erro4.1: date wrong format");
+
+    if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%c", &sep) != 1) return 1;
+    
+    if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%hhu", &minute) == 1){
+        if(minute < 0 || minute > 59 || sep != ':'){
+            printf("erro5.0: date wrong format");
+            return 0;
+        }
+    }
+    else printf("erro5.1: date wrong format");
+
+    if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%c", &sep) != 1) return 1;
+    
+    if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%hhu", &second) == 1){
+        if(second < 0 || second > 59 || sep != ':'){
+            printf("erro6.0: date wrong format");
+            return 0;
+        }
+    }
+    else printf("erro6.1: date wrong format");
+
+    if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%*u%c", &sep) != 1) return 1;
+    
+    if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%*u%*c%u", &fractional_second) == 1){
+        if(second < 0 || second > 999999 || sep != '.'){
+            printf("erro7.0: date wrong format");
+            return 0;
+        }
+    }
+    else{
+        printf("erro7.1: date wrong format");
+        return 0;
+    }
+
+    if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%*u%*c%*u%[a-zA-Z/]", tz_id) != 1) return 1;
+
+    if(((strcmp(tz_id, "Z") == 0) || (strlen(tz_id) > 3))){
+        if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%*u%*c%*u%*[a-zA-Z/]%c", &sep) != 1) return 1;
+        else{
+            printf("erro8.0: date wrong format");
+            return 0;        
+        }
+    }
+
+    if(strcmp(tz_id, "GMT") != 0 || strcmp(tz_id, "UTC") != 0 || strcmp(tz_id, "UT") != 0){
+        if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%*u%*c%*u%*[a-zA-Z/]%c", &sep) != 1){
+            if(sep != '+' || sep != '-'){
+                printf("erro9.0: date wrong format");
+                return 0;
+            }
+        }
+    }
+
+    if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%*u%*c%*u%*[a-zA-Z/]%*c%2hhd", &tz_hour) == 1){
+        if(tz_hour < -23 || tz_hour > 23){
+            printf("erro10.0: date wrong format");
+            return 0;
+        }
+    }
+    else{
+        printf("erro10.1: date wrong format");
+        return 0;
+    }
+
+    if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%*u%*c%*u%*[a-zA-Z/]%*c%*2d%c", &sep) != 1) return 1;
+
+    if(ispunct(sep) == 1 && sep == ':'){
+        if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%*u%*c%*u%*[a-zA-Z/]%*c%*3d:%2hhu", &tz_min) != 1){
+            printf("erro11.0: date wrong format");
+            return 0;
+        }
+
+        if(tz_min < 0 || tz_min > 59){
+            printf("erro11.0: date wrong format");
+            return 0;
+        }
+
+        if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%*u%*c%*u%*[a-zA-Z/]%*c%*3d:%*2u%c", &sep) != 1) return 1;
+
+        if(ispunct(sep) == 1 && sep == ':'){
+            if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%*u%*c%*u%*[a-zA-Z/]%*c%*3d:%2u:%2hhu", &tz_sec) != 1){
+                printf("erro12.0: date wrong format");
+                return 0;
+            }
+
+            if(tz_sec < 0 || tz_sec > 59){
+                printf("erro12.0: date wrong format");
+                return 0;
+            }
+        }else{
+            printf("erro12.1: date wrong format");
+            return 0;
+        }
+    }else{
+        printf("erro11.1: date wrong format");
+        return 0;
+    }
+
+    if(isdigit(sep)){
+        if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%*u%*c%*u%*[a-zA-Z/]%*c%*3d%2hhu", &tz_min) != 1){
+            printf("erro11.0: date wrong format");
+            return 0;
+        }
+
+        if(tz_min < 0 || tz_min > 59){
+            printf("erro11.1: date wrong format");
+            return 0;
+        }
+
+        if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%*u%*c%*u%*[a-zA-Z/]%*c%*3d%*2u%c", &sep) != 1) return 1;
+
+        if(ispunct(sep)){
+            printf("erro12.0: date wrong format");
+            return 0;
+        }
+        
+        if(sscanf(ts_str, "%*d%*c%*u%*c%*u%*c%*d%*c%*u%*c%*u%*c%*u%*[a-zA-Z/]%*c%*3d%*2u%2hhu", &tz_sec) != 1){
+            printf("erro12.1: date wrong format");
+            return 0;
+        }
+
+        if(tz_sec < 0 || tz_sec > 59){
+            printf("erro12.2: date wrong format");
+            return 0;
+        }
+    }else{
+        printf("erro12.3: date wrong format");
+        return 0;
+    }
 
     return 1;
 }
